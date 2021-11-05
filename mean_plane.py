@@ -7,7 +7,7 @@ import os
 import sys
 import numpy as np
 from tqdm import tqdm
-from sw_pyfuns.wass_stuff import wass_load as wlo
+import wass_load as wlo
 
 
 def compute_similarity(mesh):
