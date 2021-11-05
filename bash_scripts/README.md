@@ -1,6 +1,6 @@
 # WASS processing on the MET Norway post-processing infrastructure (PPI)
 
-The wass-oyfuns/bash_scripts repository contains shell scripts to run WASS (pre/post) stereo video processing on the METNO PPI (bionic). The wass-pyfuns/ekok_config/ directory contains the configuration files for the Ekofisk stereo video system. If using these codes on another system, these files must be updated with that system's specifications (intrinsic calibration etc.).
+The wass-pyfuns/bash_scripts repository contains shell scripts to run WASS (pre/post) stereo video processing on the METNO PPI (bionic). The wass-pyfuns/ekok_config/ directory contains the configuration files for the Ekofisk stereo video system. If using these codes on another system, these files must be updated with that system's specifications (intrinsic calibration etc.).
 
 Below is a quick tutorial for how to run the WASS processing pipeline (including some pre and post processing steps) using the python codes in the wass-pyfuns repository.
 
