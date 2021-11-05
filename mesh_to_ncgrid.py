@@ -8,9 +8,7 @@ import netCDF4 as nc
 from tqdm import tqdm
 from datetime import datetime as DT
 from datetime import timedelta as TD
-from sw_pyfuns.wass_stuff import wass_load as wlo
-from sw_pyfuns import image_processing as swi
-from sw_pyfuns import gridding as swg
+import wass_load as wlo
 from argparse import ArgumentParser
 
 """
@@ -19,6 +17,67 @@ a WASS experiment directory. The grids are all
 saved in one netCDF file in the root experiment
 directory.
 """
+
+def interp_weights(xy, uv, d=2):
+    """
+    Hack to speed up scipy.interpolate.griddata by performing 
+    the output grid triangulation (slow) first, then performing the
+    interpolation (fast) separately. This and the interpolate() function
+    below are borrowed from user Jaime at
+    https://stackoverflow.com/questions/20915502/speedup-scipy-griddata-
+    for-multiple-interpolations-between-two-irregular-grids
+    
+    Background from the original link:
+    
+    'There are several things going on every time you make a call to
+    scipy.interpolate.griddata:
+
+    1. First, a call to sp.spatial.qhull.Delaunay is made to triangulate
+    the irregular grid coordinates.
+    2. Then, for each point in the new grid,
+    the triangulation is searched to find in which triangle (actually, 
+    in which simplex, which in your 3D case will be in which tetrahedron)
+    does it lay. 
+    3. The barycentric coordinates of each new grid point with
+    respect to the vertices of the enclosing simplex are computed.
+    4. An interpolated values is computed for that grid point, using the
+    barycentric coordinates, and the values of the function at the 
+    vertices of the enclosing simplex. 
+    
+    The first three steps are identical 
+    for all your interpolations, so if you could store, for each new grid
+    point, the indices of the vertices of the enclosing simplex and the
+    weights for the interpolation, you would minimize the amount of
+    computations by a lot.
+    
+    Example:
+    
+    import scipy.interpolate as spint
+    import scipy.spatial.qhull as qhull
+    import itertools
+    
+    m, n, d = 3.5e4, 3e3, 2
+    # make sure no new grid point is extrapolated
+    bounding_cube = np.array(list(itertools.product([0, 1], repeat=d)))
+    xyz = np.vstack((bounding_cube,
+                 np.random.rand(m - len(bounding_cube), d)))
+    f = np.random.rand(m)
+    g = np.random.rand(m)
+    uvw = np.random.rand(n, d)
+
+    In [2]: vtx, wts = interp_weights(xyz, uvw, d)
+
+    In [3]: np.allclose(interpolate(f, vtx, wts), spint.griddata(xyz, f, uvw))
+    Out[3]: True'
+    """
+    tri = qhull.Delaunay(xy)
+    simplex = tri.find_simplex(uv)
+    vertices = np.take(tri.simplices, simplex, axis=0)
+    temp = np.take(tri.transform, simplex, axis=0)
+    delta = uv - temp[:, d]
+    bary = np.einsum('njk,nk->nj', temp[:, :d, :], delta)
+    return vertices, np.hstack((bary, 1 - bary.sum(axis=1, keepdims=True)))
+
 
 def parse_args(**kwargs):
     """
@@ -203,7 +262,7 @@ for cnt, i in enumerate(tqdm(corr_seq)):
         x,y,z = mesh_subs.T
         xy = np.vstack((x.flatten(),y.flatten())).T 
         print('Computing vertices \n')
-        vertices, weights = swg.interp_weights(xy, xy_grid)
+        vertices, weights = interp_weights(xy, xy_grid)
 
         # Grid mesh to eta grid and pixel coordinates to iR and jR
         print('Gridding mesh file in %s \n' % WL.wd[i])
