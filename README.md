@@ -23,3 +23,5 @@ Below is an overview and brief descriptions of the files in this repository.
 ### Running WASS
  - `wass_launch.py`
 
+### Loading and post-processing WASS output
+ - `wass_load.py`
