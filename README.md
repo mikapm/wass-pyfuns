@@ -27,4 +27,4 @@ Below is an overview and brief descriptions of the files in this repository.
 
 ### Loading and post-processing WASS output
  - `mean_plane.py` Estimate the mean sea plane from the 3D point cloud over a selected region of the stereo footprint.
- - `wass_load.py` Read WASS output mesh (i.e. 3D point cloud), and rotate and align it according to the mean sea plane. Also includes functionality to interpolate the point cloud to a regular grid.
+ - `wass_load.py` Read a WASS output mesh (i.e. 3D point cloud), and rotate and align it according to the mean sea plane. Also includes functionality to interpolate the point cloud to a regular grid.
