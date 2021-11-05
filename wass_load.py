@@ -10,8 +10,6 @@ import glob
 from datetime import datetime as DT
 from scipy.interpolate import griddata
 from sw_pyfuns import image_processing as swi
-from sw_pyfuns import gridding as swg
-
 
 def fread(fid, nelements, dtype, out_shape=None):
     """
@@ -53,6 +51,15 @@ def fread(fid, nelements, dtype, out_shape=None):
 
     return data_array
 
+def interpolate(values, vtx, wts, fill_value=np.nan):
+    """
+    Interpolate points to grid using vertices and weights from
+    interp_weights(). See that function for example. Generates output
+    that is identical to scipy.interpolate.griddata.
+    """
+    ret = np.einsum('nj,nj->n', np.take(values, vtx), wts)
+    ret[np.any(wts < 0, axis=1)] = fill_value
+    return ret
 
 class WASS_load():
     """
@@ -320,7 +327,7 @@ class WASS_load():
         if vertices is not None:
             print('Interpolating mesh to regular grid with speed-up ... \n')
             ny, nx = xgrid.shape
-            zgrid = swg.interpolate(Z, vertices, weights)
+            zgrid = interpolate(Z, vertices, weights)
             zgrid = zgrid.reshape(ny, nx)
         else:
             print('Interpolating mesh to regular grid ... \n')
