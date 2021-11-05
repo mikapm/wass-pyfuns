@@ -17,11 +17,13 @@ The functions to run the executables and load processed output depend on basic p
 Below is an overview and brief descriptions of the files in this repository.
 
 ### Image pre-processing (Ekofisk-specific)
- - `match_raw_images.py`
- - `prep_images.py` 
+ - `prep_images.py` Converts Ekofisk binary raw images to TIF format and renames the images according to WASS conventions.
+ - `match_raw_images.py` Checks for inconsistencies (e.g. unsynced frame pairs or missing frames) in stereo frame pairs.
 
 ### Running WASS
- - `wass_launch.py`
+ - `wass_launch.py` Run the WASS executables (tested in a Linux environment). Option to parallelize the stereo-frame-wise processing using the subprocess python library.
 
 ### Loading and post-processing WASS output
- - `wass_load.py`
+ - `mean_plane.py` Estimate the mean sea plane from the 3D point cloud over a selected region of the stereo footprint.
+ - `wass_load.py` Read WASS output mesh (i.e. 3D point cloud), and rotate and align it according to the mean sea plane. Also includes functionality to interpolate the point cloud to a regular grid.
+
