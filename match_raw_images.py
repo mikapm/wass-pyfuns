@@ -14,7 +14,7 @@ from tqdm import tqdm
 import numpy as np
 from datetime import datetime as DT
 from argparse import ArgumentParser
-from sw_pyfuns.wass_stuff import wass_load as wlo
+import wass_load as wlo
 
 # Input arguments
 def parse_args(**kwargs):
