@@ -11,3 +11,5 @@ These codes are based on the Matlab scripts included by default in the WASS inst
 ## Overview
 Below is an overview and brief descriptions of the files in this repository.
 
+### Running WASS
+ - `wass_launch.py`
