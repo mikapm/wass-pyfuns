@@ -9,7 +9,6 @@ import os
 import glob
 from datetime import datetime as DT
 from scipy.interpolate import griddata
-from sw_pyfuns import image_processing as swi
 
 def fread(fid, nelements, dtype, out_shape=None):
     """
@@ -60,6 +59,71 @@ def interpolate(values, vtx, wts, fill_value=np.nan):
     ret = np.einsum('nj,nj->n', np.take(values, vtx), wts)
     ret[np.any(wts < 0, axis=1)] = fill_value
     return ret
+
+def read_PtGrey_timestamp(im):
+    """
+    Returns the embedded timestamp from a non-post-processed
+    PointGrey image frame.
+    Based on Matlab function readPtGreyTimeStamp.m by Michael
+    Schwendeman. Addidtional information found at 
+    https://groups.google.com/forum/#!topic/bonsai-users/WD6mV94KAQs.
+    Parameters:
+        im - uint8 ndarray; PointGrey image array.
+    #    filename - str; if not None, will get yyyy-mm-dd HH:MM:SS
+    #               format time from image filename. Note: must be
+    #               the filename of the input image, and must follow
+    #               the PointGrey image naming convention as used at
+    #               APL, e.g. flea83_2019-12-10-181702-0000.pgm
+    Returns:
+        timestamp - float; PointGrey timestamp in seconds
+    """
+
+
+    # The timestamp information is in the first 32 pixels in the
+    # upper left corner of the image
+    embedded_pixels = im[0,0:32]
+    # Convert pixels to binary strings (same format as Matlab)
+    bin_strings = [format(i,'08b') for i in embedded_pixels]
+    # Join strings in bin_strings into one long binary string
+    embedded_string = ''.join(bin_strings)
+    # Parse the embedded string
+    # The first 7 bits is the second count
+    sec_count = int(embedded_string[:7], 2)
+    # The following 13 bits are the cycles
+    cycle_count = int(embedded_string[7:20], 2)
+    # The following 12 bits give the offset
+    cycle_offset = int(embedded_string[20:32], 2)
+    # Calculate the timestamp (not entirely sure what's going on
+    # here)
+    timestamp = (sec_count + (cycle_count + cycle_offset/3072) / 8000)
+
+    return timestamp
+
+
+def uncycle_PtGrey_timestamps(time):
+    """
+    From
+    https://groups.google.com/forum/#!topic/bonsai-users/WD6mV94KAQs:
+        'Now, we still have the problem that this 
+        representation will cycle every 128 seconds. 
+        To uncycle it, we need to find where it's cycling.
+        Fortunately, time only moves forward :-) so we can
+        get where the cycles are by looking for the points
+        where the difference in time is negative. 
+        Then you only need to accumulate those cycles and 
+        shift the cyclic time accordingly.'
+
+    Since Ekofisk stereo video images taken prior to February 2020
+    had a bug in the naming of images which caused some frames to
+    be one second 'off', this function requires the difference
+    between two timestamps to be larger than 100. This way the
+    cycling ignores the shorter 1-sec offsets that may be found in
+    Ekofisk timestamps.
+    """
+    cycles = np.insert(np.diff(time) < -100, 0, False)
+    cycleindex = np.cumsum(cycles)
+
+    return time + cycleindex * 128
 
 class WASS_load():
     """
@@ -148,9 +212,9 @@ class WASS_load():
             if i % 100 == 0:
                 print('%s \n' % i)
             im=cv2.imread(fn, 0)
-            timestamps[i] = swi.read_PtGrey_timestamp(im)
+            timestamps[i] = read_PtGrey_timestamp(im)
         # Correct for the 128-sec cycling in the timestamps
-        timestamps = swi.uncycle_PtGrey_timestamps(timestamps)
+        timestamps = uncycle_PtGrey_timestamps(timestamps)
         # Sort the cycled timestamps to get the correct image order
         # (in the for of list indices)
         corr_seq = np.argsort(timestamps)
