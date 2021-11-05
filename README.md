@@ -13,7 +13,7 @@ These codes have been tested in a Linux environment.
 ## Dependencies
 The WASS executables have to be installed to run the stereo processing pipeline. The installation instructions are found on the WASS website linked above.
 
-The functions to run the executables and load processed output depend on basic python libraries for scientific data analysis such as numpy and scipy.
+The functions to run the executables and load processed output depend on basic python libraries for scientific data analysis such as numpy and scipy as well as the OpenCV image processing library (cv2).
 
 ## Overview
 Below is an overview and brief descriptions of the files in this repository.
