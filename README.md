@@ -8,4 +8,6 @@ Links to [WASS Github repository](https://github.com/fbergama/wass) and [WASS we
 
 These codes are based on the Matlab scripts included by default in the WASS installation. The codes were originally written to facilitate the processing of stereo imagery acquired from the Ekofisk stereo video observatory.
 
+## Overview
+Below is an overview and brief descriptions of the files in this repository.
 
