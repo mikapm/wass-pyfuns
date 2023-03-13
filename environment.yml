@@ -1,0 +1,24 @@
+name: wass
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9.14
+  - ipython
+  - jupyter
+  - numpy
+  - numba=0.56.4
+  - scipy
+  - pandas
+  - xarray
+  - pint-xarray
+  - pint
+  - matplotlib
+  - cmocean
+  - scikit-learn
+  - scikit-image
+  - nbconvert
+  - cftime
+  - cf_xarray
+  - netcdf4
+  - h5netcdf
+  - tqdm
