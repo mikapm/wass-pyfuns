@@ -10,6 +10,17 @@ Most of the codes in this repository are based on the Matlab scripts included by
 
 These codes have been tested in a Linux environment. The bash_scripts folder includes scripts and specific instructions on how to run WASS processing in the computing backend of the MET Norway post-processing infrastructure (PPI).
 
+## Installation
+```
+$ mamba env create -f environment.yml
+$ conda activate wass
+```
+
+## Update environment
+```
+mamba env update --file environment.yml --prune
+```
+
 ## Dependencies
 The WASS executables have to be installed to run the stereo processing pipeline. The installation instructions are found on the WASS website linked above.
 
