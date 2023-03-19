@@ -20,5 +20,6 @@ dependencies:
   - cftime
   - cf_xarray
   - netcdf4
+  - opencv
   - h5netcdf
   - tqdm
