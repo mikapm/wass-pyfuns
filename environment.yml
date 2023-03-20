@@ -21,5 +21,7 @@ dependencies:
   - cf_xarray
   - netcdf4
   - opencv
+  - ipympl
+  - ipywidgets=8.0.4
   - h5netcdf
   - tqdm
