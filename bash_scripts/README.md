@@ -36,7 +36,7 @@ mikapm@xvis-m4a:/lustre/storeB/project/fou/om/stereowave/data/wass_output/202005
 1500  1520  1540  1600  1620  1640  compute_mean_planes.bash  generate_grids.bash  run_wass_processing.bash
 ```
 
-To run the WASS pipeline, first log on to one of the PPI computing backends (so you don't use up all the computing power on PPI; the processing uses 24 processors in parallel by default):
+To run the WASS pipeline, first log on to one of the RHEL8 PPI computing backends (so you don't use up all the computing power on PPI; the processing uses 24 processors in parallel by default):
 
 ```
 ppi-r8login-b1.int.met.no
