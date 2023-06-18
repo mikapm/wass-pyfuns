@@ -39,13 +39,14 @@ mikapm@xvis-m4a:/lustre/storeB/project/fou/om/stereowave/data/wass_output/202005
 To run the WASS pipeline, first log on to one of the PPI computing backends (so you don't use up all the computing power on PPI; the processing uses 24 processors in parallel by default):
 
 ```
-qlogin -q research-bionic.q -l h_vmem=1G -l h_rt=06:00:00
+ppi-r8login-b1.int.met.no
 ```
-or
+Load modules:
+
 ```
-qlogin -q research-el7.q -l h_vmem=1G -l h_rt=06:00:00
+module use /modules/MET/rhel8/user-modules/
+module load wass/1.8_heads-master-0-g2233c24
 ```
-Define requested runtime with the h_rt option. 6 hours, as in the example above, should be enough to process one 20-minute batch.
 
 When logged on to the computing backend, start the WASS pipeline on a new project (e.g. 1200/ in wass_output/20191209) by running
 
