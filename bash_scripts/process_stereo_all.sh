@@ -37,7 +37,7 @@ for datetime in "${@:5}"; do
     python wass-pyfuns/pywass/mesh_to_ncgrid_v2.py -dr $expdir -dxy $dxy -xmin -60 -xmax 70 -ymin -180 -ymax -60
 
     # Delete the input directory that was created, which contains a tif version of every image for both cams #
-    rm -rf "${expdir}/input"
+    # rm -rf "${expdir}/input"
 
     # Make a softlink to the nc file in the dist directory #
     # Note: if no /grid/wass.nc file was made, the datetime is skipped, won't show up in dist
