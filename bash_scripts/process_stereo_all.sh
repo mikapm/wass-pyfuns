@@ -42,7 +42,7 @@ for datetime in "${@:5}"; do
     # Make a softlink to the nc file in the dist directory #
     # Note: if no /grid/wass.nc file was made, the datetime is skipped, won't show up in dist
     if test -f "$expdir"/grid/wass.nc; then
-	distdir="/home/ibbisin1/ROXSI/2023/grimm/dataProducts/stereo/dist"
+	distdir="path/stereo/dist"
 	ln -rs "$expdir"/grid/wass.nc "$distdir"/"$d"_"$t"_wass.nc 
     fi
 
