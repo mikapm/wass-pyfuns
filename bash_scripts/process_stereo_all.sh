@@ -30,7 +30,7 @@ for datetime in "${@:5}"; do
     python wass-pyfuns/pywass/path/rename_frames.py -nf $nframes -date $d -time $t
 
     # Run the processing #
-    python wass-pyfuns/pywass/wass_launch.py -dr $expdir -pc $ncores -wr /home/wilsongr-local/wass
+    python wass-pyfuns/pywass/wass_launch.py -dr $expdir -pc $ncores -wr /home/local/wass
 
     # Run the gridding #
     python wass-pyfuns/pywass/mean_plane.py -dr $expdir -baseline 5.51 -ymin -150 -ymax -100 -xmin -25 -xmax 25
