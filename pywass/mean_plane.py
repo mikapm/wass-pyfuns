@@ -145,16 +145,16 @@ if __name__ == '__main__':
                 type=float,
                 default=-50,
                 )
-#        parser.add_argument("-ind_s", 
-#                help=("Start index."),
-#                type=int,
-#                default=0,
-#                )
-#        parser.add_argument("-ind_e", 
-#                help=("End index."),
-#                type=int,
-#                default=-1,
-#                )
+        parser.add_argument("-ind_s", 
+                help=("Start index."),
+                type=int,
+                default=0,
+                )
+        parser.add_argument("-ind_e", 
+                help=("End index."),
+                type=int,
+                default=-1,
+                )
 
         return parser.parse_args(**kwargs)
 
