@@ -106,8 +106,7 @@ for i,fN in enumerate(tqdm(imNamesLeft)):
     outFile = os.path.join(cam0Dir, wassFileName)
     # Check if tif file already exists
     if os.path.isfile(outFile):
-        print('File {} exists, skipping to next one ...\n'.format(
-            fN))
+        # print('File {} exists, skipping to next one ...\n'.format(fN))
         continue
 
     # Check if file size is 0
@@ -128,7 +127,7 @@ for i,fN in enumerate(tqdm(imNamesLeft)):
     cv2.imwrite(outFile, im)
 
 # Loop over files in imNamesRight:
-for i,fN in enumerate(imNamesRight):
+for i,fN in enumerate(tqdm(imNamesRight)):
     # Read raw data into array
     # print(fN)
     # Set output filename to comply with WASS requirements
@@ -150,8 +149,7 @@ for i,fN in enumerate(imNamesRight):
     wassFileName = (seqNo + '_' + timeStamp + '_' + camNo + '.tif')
     outFile = os.path.join(cam1Dir, wassFileName)
     if os.path.isfile(outFile):
-        print('File {} exists, skipping to next one ...\n'.format(
-            fN))
+        # print('File {} exists, skipping to next one ...\n'.format(fN))
         continue
 
     # Check if file size is 0
