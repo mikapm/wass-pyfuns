@@ -35,7 +35,7 @@ def compute_similarity(mesh):
         n_points, dim = mesh.shape
 
     # Compute translation and centred points
-    print('Computing similarity ... \n')
+    # print('Computing similarity ... \n')
     t = np.mean(mesh, 0) # translation vector (centroid)
     mesh_sim = mesh - np.tile(t, (n_points,1))
 
@@ -69,7 +69,7 @@ def fit_plane_simple(mesh):
     mesh_sim, H = compute_similarity(mesh)
 
     # 2. Fit a plane by the simplest algebraic method
-    print('Fitting plane by svd ... \n')
+    # print('Fitting plane by svd ... \n')
     u, d, v = np.linalg.svd(mesh_sim, full_matrices=False)
     plane = np.zeros(len(v) + 1)
     plane[:3] = v[2,:]
@@ -176,7 +176,7 @@ if __name__ == '__main__':
     # If ind_e=-1, process only selected range of workdirs
     if args.ind_e > 0:
         # Check that ind_s < ind_e
-        assert args.ind_s > args.ind_e, ('-ind_s must be smaller than -ind_e')
+        assert (args.ind_s < args.ind_e), ('-ind_s must be smaller than -ind_e')
         # Check how many workdirs N, and is -ind_s/-ind_e > N
         N = len(WL.wd)
         if args.ind_s >= N:
@@ -194,89 +194,102 @@ if __name__ == '__main__':
         i0 = 0
         i1 = len(WL.wd)
 
-    # Store all planes for averaging
-    planes_pipe = np.zeros((len(WL.wd[i0:i1]), 4)).astype(np.float32) # from WASS pipeline
-    planes_all = np.zeros_like(planes_pipe) # from entire mesh region
-    planes_sub = np.zeros_like(planes_pipe) # from sub-region of mesh
-
-    # Loop over working directories and compute planes
-    for i, wd in enumerate(tqdm(WL.wd[i0:i1]), i0):
-        # print(' ')
-        # Load pipeline-generated plane
-        fn_plane_pipe = os.path.join(wd, 'plane.txt')
-        if os.path.isfile(fn_plane_pipe):
-            with open(fn_plane_pipe, 'r') as fn:
-                planes_pipe[i,:] = np.loadtxt(fn)
-        else:
-            print('Plane file not found in %s \n' % wd)
-
-        fn_mesh = os.path.join(wd, 'mesh_cam.xyzC')
-        if os.path.isfile(fn_mesh):
-            # Load mesh
-            mesh_cam = WL.load_camera_mesh(i, print_msg=False)
-            # Mean plane all points
-            plane_all, _, _ = fit_plane_simple(mesh_cam)
-            # Align plane
-            mesh_al = WL.align_plane(mesh=mesh_cam, plane=plane_all)
-            # Mean plane sub region
-            x,y,z = mesh_al.T
-            mesh_cam = mesh_cam.T
-            mesh_sub = mesh_cam[(x>args.xmin) & (x<args.xmax) & \
-                    (y>args.ymin) & (y<args.ymax), :]
-            plane_sub, _, _ = fit_plane_simple(mesh_sub)
-            # Save planes
-            planes_all[i,:] = plane_all
-            planes_sub[i,:] = plane_sub
-
-    # Save all planes
-    print(' ')
-    print('Saving planes \n')
     # If processing a range of indices, save range to filename
     if args.ind_e > 0:
         s = f'_{i0}_{i1}' # Index range string for filename
     else:
         s = '' # no added string
-    np.savetxt(os.path.join(WL.data_root, f'planes_pipe{s}.txt'), planes_pipe)
-    np.savetxt(os.path.join(WL.data_root, f'planes_all{s}.txt'), planes_all)
-    np.savetxt(os.path.join(WL.data_root, f'planes_sub{s}.txt'), planes_sub)
+    fn_planes_pipe = os.path.join(WL.planedir, f'planes_pipe{s}.txt')
+    fn_planes_all = os.path.join(WL.planedir, f'planes_all{s}.txt')
+    fn_planes_sub = os.path.join(WL.planedir, f'planes_sub{s}.txt')
+    fn_files = [fn_planes_pipe, fn_planes_pipe, fn_planes_sub]
+    fn_exist = [os.path.isfile(f) for f in fn_files]
+
+    if not np.any(fn_exist):
+        # Store all planes for averaging
+        planes_pipe = np.zeros((len(WL.wd[i0:i1]), 4)).astype(np.float32) # from WASS pipeline
+        planes_all = np.zeros_like(planes_pipe) # from entire mesh region
+        planes_sub = np.zeros_like(planes_pipe) # from sub-region of mesh
+
+        # Loop over working directories and compute planes
+        for i, wd in enumerate(tqdm(WL.wd[i0:i1]), i0):
+            # print(' ')
+            # Load pipeline-generated plane
+            fn_plane_pipe = os.path.join(wd, 'plane.txt')
+            if os.path.isfile(fn_plane_pipe):
+                with open(fn_plane_pipe, 'r') as fn:
+                    planes_pipe[i-i0,:] = np.loadtxt(fn)
+            else:
+                print('Plane file not found in %s \n' % wd)
+
+            fn_mesh = os.path.join(wd, 'mesh_cam.xyzC')
+            if os.path.isfile(fn_mesh):
+                # Load mesh
+                mesh_cam = WL.load_camera_mesh(i, print_msg=False)
+                # Mean plane all points
+                plane_all, _, _ = fit_plane_simple(mesh_cam)
+                # Align plane
+                mesh_al = WL.align_plane(mesh=mesh_cam, plane=plane_all)
+                # Mean plane sub region
+                x,y,z = mesh_al.T
+                mesh_cam = mesh_cam.T
+                mesh_sub = mesh_cam[(x>args.xmin) & (x<args.xmax) & \
+                        (y>args.ymin) & (y<args.ymax), :]
+                plane_sub, _, _ = fit_plane_simple(mesh_sub)
+                # Save planes
+                planes_all[i-i0,:] = plane_all
+                planes_sub[i-i0,:] = plane_sub
+
+        # Save all planes
+        print(' ')
+        print('Saving planes \n')
+
+        np.savetxt(fn_planes_pipe, planes_pipe)
+        np.savetxt(fn_planes_all, planes_all)
+        np.savetxt(fn_planes_sub, planes_sub)
 
     # Average planes and save average planes
     if args.avg_planes:
-        print('Averaging planes and saving \n')
-        # List all available plane files, concatenate and average
-        planefiles_pipe = sorted(glob.glob(os.path.join(WL.data_root, 'planes_pipe*.txt')))
-        if len(planefiles_pipe) > 1:
-            planes_pipe_list = [] # Empty list for concatenating planes
-            for pf in planefiles_pipe:
-                p = np.loadtxt(pf)
-                planes_pipe_list.append(p)
-            # Concatenate planes for averaging
-            planes_pipe = np.concatenate(planes_pipe_list)
-        # Entire mesh region
-        planefiles_all = sorted(glob.glob(os.path.join(WL.data_root, 'planes_all*.txt')))
-        if len(planefiles_all) > 1:
-            planes_all_list = [] # Empty list for concatenating planes
-            for pf in planefiles_all:
-                p = np.loadtxt(pf)
-                planes_all_list.append(p)
-            # Concatenate planes for averaging
-            planes_all = np.concatenate(planes_all_list)
-        # Sub-regions
-        planefiles_sub = sorted(glob.glob(os.path.join(WL.data_root, 'planes_sub*.txt')))
-        if len(planefiles_sub) > 1:
-            planes_sub_list = [] # Empty list for concatenating planes
-            for pf in planefiles_sub:
-                p = np.loadtxt(pf)
-                planes_sub_list.append(p)
-            # Concatenate planes for averaging
-            planes_sub = np.concatenate(planes_sub_list)
-        # Average planes
-        plane_avg_pipe = np.mean(planes_pipe, 0)
-        plane_avg_all = np.mean(planes_all, 0)
-        plane_avg_sub = np.mean(planes_sub, 0)
-        np.savetxt(os.path.join(WL.data_root, 'plane_avg_pipe.txt'), plane_avg_pipe)
-        np.savetxt(os.path.join(WL.data_root, 'plane_avg_all.txt'), plane_avg_all)
-        np.savetxt(os.path.join(WL.data_root, 'plane_avg_sub.txt'), plane_avg_sub)
+        fn_pipe = os.path.join(WL.data_root, 'plane_avg_pipe.txt')
+        fn_all = os.path.join(WL.data_root, 'plane_avg_all.txt')
+        fn_sub = os.path.join(WL.data_root, 'plane_avg_sub.txt')
+        if not os.path.isfile(fn_pipe) or not os.path.isfile(fn_all) or not os.path.isfile(fn_sub):
+            # print('Averaging planes and saving \n')
+            # List all available plane files, concatenate and average
+            planefiles_pipe = sorted(glob.glob(os.path.join(WL.planedir, 'planes_pipe*.txt')))
+            if len(planefiles_pipe) > 1:
+                planes_pipe_list = [] # Empty list for concatenating planes
+                for pf in planefiles_pipe:
+                    p = np.loadtxt(pf)
+                    planes_pipe_list.append(p)
+                # Concatenate planes for averaging
+                planes_pipe = np.concatenate(planes_pipe_list)
+            # Entire mesh region
+            planefiles_all = sorted(glob.glob(os.path.join(WL.planedir, 'planes_all*.txt')))
+            if len(planefiles_all) > 1:
+                planes_all_list = [] # Empty list for concatenating planes
+                for pf in planefiles_all:
+                    p = np.loadtxt(pf)
+                    planes_all_list.append(p)
+                # Concatenate planes for averaging
+                planes_all = np.concatenate(planes_all_list)
+            # Sub-regions
+            planefiles_sub = sorted(glob.glob(os.path.join(WL.planedir, 'planes_sub*.txt')))
+            if len(planefiles_sub) > 1:
+                planes_sub_list = [] # Empty list for concatenating planes
+                for pf in planefiles_sub:
+                    p = np.loadtxt(pf)
+                    planes_sub_list.append(p)
+                # Concatenate planes for averaging
+                planes_sub = np.concatenate(planes_sub_list)
+            # Average planes
+            plane_avg_pipe = np.mean(planes_pipe, 0)
+            plane_avg_all = np.mean(planes_all, 0)
+            plane_avg_sub = np.mean(planes_sub, 0)
+            # Save to txt
+            np.savetxt(fn_pipe, plane_avg_pipe)
+            np.savetxt(fn_all, plane_avg_all)
+            np.savetxt(fn_sub, plane_avg_sub)
 
 
 
