@@ -104,6 +104,16 @@ def parse_args(**kwargs):
             type=float,
             default=5.11,
             )
+    parser.add_argument("-ind_s", 
+            help=("Start index."),
+            type=int,
+            default=0,
+            )
+    parser.add_argument("-ind_e", 
+            help=("End index. If set to -1, processes all indices."),
+            type=int,
+            default=-1,
+            )
     parser.add_argument("-fillvalue", 
             help=("Fill value for netcdf file."),
             type=float,
@@ -234,11 +244,11 @@ if not os.path.isfile(fn_nc):
             # Speed up gridding by calculating vertices and weights only once.
             x, y, z = mesh_subs.T
             xy = np.vstack((x.flatten(), y.flatten())).T 
-            print('Computing vertices \n')
+            # print('Computing vertices \n')
             vertices, weights = interp_weights(xy, xy_grid)
 
             # Grid mesh to eta grid and pixel coordinates to iR and jR
-            print('Gridding mesh file in %s \n' % WL.wd[i])
+            # print('Gridding mesh file in %s \n' % WL.wd[i])
             _, _, etagrid = WL.mesh_to_grid(mesh_subs, dx=args.dxy, dy=args.dxy, 
                     xlim=(args.xmin, args.xmax+1), ylim=(args.ymin, args.ymax+1),
                     vertices=vertices, weights=weights)
