@@ -19,6 +19,7 @@ import glob
 import os
 import numpy as np
 import cv2
+from tqdm import tqdm
 from argparse import ArgumentParser
 
 def parse_args(**kwargs):
@@ -82,10 +83,9 @@ if not os.path.isdir(cam1Dir):
     os.mkdir(cam1Dir)
 
 # Loop over files in imNamesLeft:
-for i,fN in enumerate(imNamesLeft):
+for i,fN in enumerate(tqdm(imNamesLeft)):
     # Read raw data into array
-    print(fN)
-
+    # print(fN)
     # Set output filename to comply with WASS requirements
     basePath, rawFile = os.path.split(fN)
     rawFileSplit = rawFile.split('-')
@@ -130,8 +130,7 @@ for i,fN in enumerate(imNamesLeft):
 # Loop over files in imNamesRight:
 for i,fN in enumerate(imNamesRight):
     # Read raw data into array
-    print(fN)
-
+    # print(fN)
     # Set output filename to comply with WASS requirements
     basePath, rawFile = os.path.split(fN)
     rawFileSplit = rawFile.split('-')
