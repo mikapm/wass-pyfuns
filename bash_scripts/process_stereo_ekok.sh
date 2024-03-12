@@ -21,9 +21,11 @@ for datetime in "${@:3}"; do
     t=${datetime:8:13} # time string
     expdir_base="$rootdir"/"$d" # Experiment date directory
     expdir="$expdir_base"/"$t" # Experiment time directory
-    echo $d
-    echo $t
-    echo $expdir
+    echo " "
+    echo "date: ""$d"
+    echo "start time: ""$t"
+    echo "Experiment directory: ""$expdir"
+    echo " "
 
     # Check if expdir_base exists
     if [ ! -d "$expdir_base" ]; then
@@ -51,21 +53,30 @@ for datetime in "${@:3}"; do
         mkdir "$inputdir"
     fi
     # Run file conversion raw -> tif (assuming raw frames in expdir/raw folder)
+    echo " "
     echo "Converting frames ..."
-    python /home/mikapm/Github/wass-pyfuns/pywass/prep_images.py "$expdir"/raw -outdir $inputdir
+    # python /home/mikapm/Github/wass-pyfuns/pywass/prep_images.py "$expdir"/raw -outdir $inputdir
 
-    # # Run the processing #
-    # echo "Running WASS ..."
-    # python wass-pyfuns/pywass/wass_launch.py -dr $expdir -pc $ncores -wr /home/local/wass
+    # Run the processing #
+    echo " "
+    echo "Running WASS ..."
+    python /home/mikapm/Github/wass-pyfuns/pywass/wass_launch.py -dr "$expdir" -pc "$ncores"
 
-    # # Calculate mean planes. Use batches to run in parallel #
-    # echo "Computing mean planes ..."
-    # python wass-pyfuns/pywass/mean_plane.py -dr $expdir -ind_s 0 -ind_e 500 &
-    # python wass-pyfuns/pywass/mean_plane.py -dr $expdir -ind_s 501 -ind_e 1000 &
-    # python wass-pyfuns/pywass/mean_plane.py -dr $expdir -ind_s 1001 -ind_e 1500 &
-    # wait # This will wait until all above scripts finish
+    # Calculate mean planes. Use batches to run in parallel #
+    echo " "
+    echo "Computing mean planes ..."
+    python /home/mikapm/Github/wass-pyfuns/pywass/mean_plane.py -dr "$expdir" -ind_s 0 -ind_e 125 &
+    python /home/mikapm/Github/wass-pyfuns/pywass/mean_plane.py -dr "$expdir" -ind_s 126 -ind_e 250 &
+    python /home/mikapm/Github/wass-pyfuns/pywass/mean_plane.py -dr "$expdir" -ind_s 251 -ind_e 375 &
+    python /home/mikapm/Github/wass-pyfuns/pywass/mean_plane.py -dr "$expdir" -ind_s 376 -ind_e 500 &
+    wait # This will wait until all above scripts finish
+    # Average planes
+    echo " "
+    echo "Averaging planes ..."
+    python /home/mikapm/Github/wass-pyfuns/pywass/mean_plane.py -dr "$expdir" -ind_s 376 -ind_e 500 --avg_planes
 
     # # Run the gridding #
+    # echo " "
     # echo "Running gridding ..."
     # python wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr $expdir -dxy $dxy -xmin -60 -xmax 70 -ymin -180 -ymax -60
 
