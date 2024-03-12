@@ -66,22 +66,22 @@ def parse_args(**kwargs):
     parser.add_argument("-xmin", 
             help=("Lower grid x limit."),
             type=float,
-            default=-50,
+            default=-70,
             )
     parser.add_argument("-xmax", 
             help=("Upper grid x limit."),
             type=float,
-            default=60,
+            default=70,
             )
     parser.add_argument("-ymin", 
             help=("Lower grid y limit. (y decreases outwards from platform)"),
             type=float,
-            default=-160,
+            default=-200,
             )
     parser.add_argument("-ymax", 
             help=("Upper grid y limit."),
             type=float,
-            default=-60,
+            default=-50,
             )
     parser.add_argument("-step", 
             help=("Near-field subsampling step. Set to 0 to skip subsampling."),
@@ -102,17 +102,7 @@ def parse_args(**kwargs):
     parser.add_argument("-baseline", 
             help=("Stereo baseline [m]."),
             type=float,
-            default=5.51,
-            )
-    parser.add_argument("-ser_cam0", 
-            help=("Serial number of cam0."),
-            type=str,
-            default='1014929',
-            )
-    parser.add_argument("-ser_cam1", 
-            help=("Serial number of cam1."),
-            type=str,
-            default='1014932',
+            default=5.11,
             )
     parser.add_argument("-fillvalue", 
             help=("Fill value for netcdf file."),
