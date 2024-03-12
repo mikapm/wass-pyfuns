@@ -153,6 +153,8 @@ class WASS_load():
         # List all working directories
         self.wd = sorted(glob.glob(os.path.join(self.data_root,
             'out', '*wd')))
+        # Mean sea plane dir.
+        self.planedir = os.path.join(self.data_root, 'planes')
         # Also list input images (which provide timestamps)
         self.in_cam0 = sorted(glob.glob(os.path.join(
             self.data_root, 'input', 'cam0', '*.tif')))
