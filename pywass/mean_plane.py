@@ -200,9 +200,8 @@ if __name__ == '__main__':
     planes_sub = np.zeros_like(planes_pipe) # from sub-region of mesh
 
     # Loop over working directories and compute planes
-    for i, wd in enumerate(tqdm(WL.wd[i0:i1]),i0):
-        print(' ')
-
+    for i, wd in enumerate(tqdm(WL.wd[i0:i1]), i0):
+        # print(' ')
         # Load pipeline-generated plane
         fn_plane_pipe = os.path.join(wd, 'plane.txt')
         if os.path.isfile(fn_plane_pipe):
@@ -214,7 +213,7 @@ if __name__ == '__main__':
         fn_mesh = os.path.join(wd, 'mesh_cam.xyzC')
         if os.path.isfile(fn_mesh):
             # Load mesh
-            mesh_cam = WL.load_camera_mesh(i)
+            mesh_cam = WL.load_camera_mesh(i, print_msg=False)
             # Mean plane all points
             plane_all, _, _ = fit_plane_simple(mesh_cam)
             # Align plane
