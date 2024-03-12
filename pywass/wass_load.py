@@ -224,13 +224,14 @@ class WASS_load():
         return corr_seq
 
 
-    def load_camera_mesh(self, idx):
+    def load_camera_mesh(self, idx, print_msg=False):
         """
         Load the stereo mesh created by WASS.
 
         Parameters:
             idx - int; working directory number starting
                   at 0.
+            print_msg - Set to False to ignore any print statements
         Returns:
             mesh_cam; ndarray - 2D mesh created by WASS
 
@@ -244,9 +245,11 @@ class WASS_load():
         """
         mesh_dir = self.wd[idx]
         mesh_file = os.path.join(mesh_dir, 'mesh_cam.xyzC')
-        print('Mesh file: %s \n' % mesh_file)
+        if print_msg:
+            print('Mesh file: %s \n' % mesh_file)
         with open(mesh_file, 'rb') as fid:
-            print('Loading compressed data ...\n')
+            if print_msg:
+                print('Loading compressed data ...\n')
             # Use fread defined above to read file
             # contents
             npts = fread(fid, 1, np.uint32)
@@ -310,7 +313,7 @@ class WASS_load():
 
 
     def align_plane(self, idx=1, mesh=None, plane=None, planefile=None, 
-            return_plane=False):
+            return_plane=False, print_msg=False):
         """
         Align generated mesh by rotation and translation
         using R and T matrices following the Matlab function
@@ -324,6 +327,7 @@ class WASS_load():
                    specified by idx.
             plane - ndarray; WASS plane array
             planefile - str; path to plane file
+            print_msg - Set to False to ignore any print statements
         """
         if mesh is None:
             mesh = self.load_camera_mesh(idx)
@@ -345,7 +349,8 @@ class WASS_load():
         R, T = self.RT_from_plane(plane)
 
         # Rotate and translate and transpose
-        print('Aligning mesh according to plane ... \n')
+        if print_msg:
+            print('Aligning mesh according to plane ... \n')
         mesh_aligned = (R @ mesh + np.tile(T, (1, mesh.shape[1]))).T
         # Apply scale, i.e. multiply by baseline to get units in metres
         mesh_aligned = mesh_aligned * self.scale
@@ -358,7 +363,7 @@ class WASS_load():
             return mesh_aligned
 
 
-    def mesh_to_grid(self, mesh_aligned, dx, dy, 
+    def mesh_to_grid(self, mesh_aligned, dx, dy, print_msg=False,
             xlim=None, ylim=None, vertices=None, weights=None,
             **kwargs):
         """
@@ -391,12 +396,14 @@ class WASS_load():
         xgrid, ygrid = np.mgrid[xlim[0]:xlim[1]:dx, ylim[0]:ylim[1]:dy]
         # Interpolate
         if vertices is not None:
-            print('Interpolating mesh to regular grid with speed-up ... \n')
+            if print_msg:
+                print('Interpolating mesh to regular grid with speed-up ... \n')
             ny, nx = xgrid.shape
             zgrid = interpolate(Z, vertices, weights)
             zgrid = zgrid.reshape(ny, nx)
         else:
-            print('Interpolating mesh to regular grid ... \n')
+            if print_msg:
+                print('Interpolating mesh to regular grid ... \n')
             zgrid = griddata((X,Y), Z, (xgrid,ygrid), **kwargs)
 
         return xgrid, ygrid, zgrid
@@ -506,7 +513,8 @@ class WASS_load():
 
 
         
-    def project_mesh_to_cam(self, idx=1, plane=None, mesh=None, cam=1):
+    def project_mesh_to_cam(self, idx=1, plane=None, mesh=None, cam=1,
+                            print_msg=False):
         """
         Project mesh onto undistorted camera frame view.
         Specify camera number 0 (left) or 1 (right).
@@ -514,7 +522,7 @@ class WASS_load():
         by self.align_plane().
         """
         if mesh is None:
-            mesh = self.load_camera_mesh(idx)
+            mesh = self.load_camera_mesh(idx, print_msg=print_msg)
         # Load projection matrix
         P1 = np.loadtxt(os.path.join(self.wd[idx], 'P{}cam.txt'.format(cam)))
         # Get elevations from mesh and plane
@@ -524,7 +532,8 @@ class WASS_load():
                 np.tile(plane.reshape(-1,1), (1,n_pts)), axis=0)
         elevations *= (self.scale * (-1)) # fix scale and z direction
         # Project mesh onto camera view
-        print('Projecting unaligned mesh to camera view ... \n')
+        if print_msg:
+            print('Projecting unaligned mesh to camera view ... \n')
         pt2d = P1 @ np.vstack((mesh, np.ones(n_pts)))
         # Homogeneous -> Cartesian coord: divide by last coordinate
         pt2d /= np.tile(pt2d[2,:], (3,1))
