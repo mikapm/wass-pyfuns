@@ -42,16 +42,16 @@ class WASS_launcher():
     for instructions on how to set up a new WASS experiment.
     """
     def __init__(self,
-            process_cap = 4, # Max. number of parallel processes to use
-            max_frames_to_match = 75,
-            wass_dir = '/modules/bionic/user-apps/wass/8.10.2021/wass',
-            exe_dir = None, # executables dir
-            data_root = '/home/mikapm/wass/test/WASS_TEST/W07', # experiment dir
-            overwrite_outdir = False, # overwrite existing output dir?
-            img_type = 'tif', # Input image file extension: tif, png or jpg
+            process_cap=4, # Max. number of parallel processes to use
+            max_frames_to_match=75,
+            wass_dir='/modules/bionic/user-apps/wass/8.10.2021/wass',
+            exe_dir=None, # executables dir
+            data_root='/home/mikapm/wass/test/WASS_TEST/W07', # experiment dir
+            overwrite_outdir=False, # overwrite existing output dir?
+            img_type='tif', # Input image file extension: tif, png or jpg
             # Remove large files from output folders after;
             # -1 -> keep all files.
-            delete_excessive_from = -1,
+            delete_excessive_from=-1,
             ):
 
         self.process_cap = process_cap
@@ -356,12 +356,6 @@ if __name__ == '__main__':
                 type=str,
                 default='/home/mikapm/wass/test/WASS_TEST/W07',
                 )
-        parser.add_argument("-overwrite", 
-                help=("Overwrite existing output dir?"),
-                type=int,
-                choices=[0,1],
-                default=0,
-                )
         parser.add_argument("-type", 
                 help=("Image format (file extension)"),
                 type=str,
@@ -370,10 +364,13 @@ if __name__ == '__main__':
                 )
         parser.add_argument("-defn", 
                 help=("Delete excessive files after Nth output "
-                    "working directory. Set to -1 to keep all "
-                    "files"),
+                    "working directory. Set to -1 to keep all files"),
                 type=int,
                 default=-1,
+                )
+        parser.add_argument("--overwrite", 
+                help=("Overwrite existing output dir?"),
+                action='store_true'
                 )
         return parser.parse_args(**kwargs)
 
@@ -382,13 +379,20 @@ if __name__ == '__main__':
 
     # Create WASS launcer object using default or input arguments
     WL = WASS_launcher(
-            process_cap = args.pc,
-            max_frames_to_match = args.mftm,
-            data_root = args.dr,
-            overwrite_outdir = bool(args.overwrite),
-            img_type = args.type,
-            delete_excessive_from = args.defn,
+            process_cap=args.pc,
+            max_frames_to_match=args.mftm,
+            data_root=args.dr,
+            overwrite_outdir=bool(args.overwrite),
+            img_type=args.type,
+            delete_excessive_from=args.defn,
             )
+
+    # Check if output folder already exist if not using --overwrite
+    if not args.overwrite:
+        outbasedir = os.path.join(WL.data_root, 'out')
+        if os.path.isdir(outbasedir):
+            print('Output dir. already exists -> exiting script ...')
+            sys.exit(0)
     
     # Time the entire processing
     start_process = time.time()
