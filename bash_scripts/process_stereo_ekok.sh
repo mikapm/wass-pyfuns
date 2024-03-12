@@ -7,8 +7,8 @@
 # 2. Number of cores to parallelize processing with
 # 3. and higher: date-time strings (format: yyyymmddHHMM)
 
-# Example (parallelized with 6 cores):
-# ./process_stereo_ekok.sh /path/to/experiment_base/ 6
+# Example (parallelized with 6 cores, 2022/09/16 16:00-16:20):
+# ./process_stereo_ekok.sh /path/to/experiment_root/ 6 202209161600
 
 rootdir="$1"
 ncores="$2"
@@ -19,29 +19,55 @@ for datetime in "${@:3}"; do
     # Set inputs #
     d=${datetime:0:8} # date string
     t=${datetime:8:13} # time string
-    expdir="$rootdir"/"$d"/"$t" # Experiment directory
+    expdir_base="$rootdir"/"$d" # Experiment date directory
+    expdir="$expdir_base"/"$t" # Experiment time directory
     echo $d
     echo $t
     echo $expdir
 
-    # Run file conversion raw -> tif . Use batches to run in parallel #
+    # Check if expdir_base exists
+    if [ ! -d "$expdir_base" ]; then
+        echo "$expdir_base does not exist, generating it ..."
+        mkdir "$expdir_base"
+    fi
+    # Check if expdir exists 
+    if [ ! -d "$expdir_base" ]; then
+        echo "$expdir_base does not exist, generating it ..."
+        mkdir "$expdir_base"
+    fi
+
+    # Copy over config folder (assuming it exists in $rootdir)
+    configdir="$expdir"/config
+    # Check if config dir. exists 
+    if [ ! -d "$configdir" ]; then
+        echo "Copying over config folder to ""$configdir"
+        cp -r "$rootdir"/config "$expdir"/config
+    fi
+
+    # Check if input image dir. (for WASS) exists
+    inputdir="$expdir"/input
+    if [ ! -d "$inputdir" ]; then
+        echo "$inputdir does not exist, generating it ..."
+        mkdir "$inputdir"
+    fi
+    # Run file conversion raw -> tif (assuming raw frames in expdir/raw folder)
     echo "Converting frames ..."
-    python wass-pyfuns/pywass/prep_images.py /path/to/raw -outdir $expdir
+    python /home/mikapm/Github/wass-pyfuns/pywass/prep_images.py "$expdir"/raw -outdir $inputdir
 
-    # Run the processing #
-    echo "Running WASS ..."
-    python wass-pyfuns/pywass/wass_launch.py -dr $expdir -pc $ncores -wr /home/local/wass
+    # # Run the processing #
+    # echo "Running WASS ..."
+    # python wass-pyfuns/pywass/wass_launch.py -dr $expdir -pc $ncores -wr /home/local/wass
 
-    # Calculate mean planes. Use batches to run in parallel #
-    echo "Computing mean planes ..."
-    python wass-pyfuns/pywass/mean_plane.py -dr $expdir -ind_s 0 -ind_e 500 &
-    python wass-pyfuns/pywass/mean_plane.py -dr $expdir -ind_s 501 -ind_e 1000 &
-    python wass-pyfuns/pywass/mean_plane.py -dr $expdir -ind_s 1001 -ind_e 1500 &
-    wait # This will wait until all scripts finish
+    # # Calculate mean planes. Use batches to run in parallel #
+    # echo "Computing mean planes ..."
+    # python wass-pyfuns/pywass/mean_plane.py -dr $expdir -ind_s 0 -ind_e 500 &
+    # python wass-pyfuns/pywass/mean_plane.py -dr $expdir -ind_s 501 -ind_e 1000 &
+    # python wass-pyfuns/pywass/mean_plane.py -dr $expdir -ind_s 1001 -ind_e 1500 &
+    # wait # This will wait until all above scripts finish
 
-    # Run the gridding #
-    echo "Running gridding ..."
-    python wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr $expdir -dxy $dxy -xmin -60 -xmax 70 -ymin -180 -ymax -60
+    # # Run the gridding #
+    # echo "Running gridding ..."
+    # python wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr $expdir -dxy $dxy -xmin -60 -xmax 70 -ymin -180 -ymax -60
 
     # Delete the input directory that was created, which contains a tif version of every image for both cams #
     # rm -rf "${expdir}/input"
