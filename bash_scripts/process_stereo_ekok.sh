@@ -88,7 +88,7 @@ for datetime in "${@:3}"; do
     python /home/mikapm/Github/wass-pyfuns/pywass/mean_plane.py -dr "$expdir" -ind_s 401 -ind_e 500 &
     wait # This will wait until all above scripts finish
     # Average batched planes
-    python /home/mikapm/Github/wass-pyfuns/pywass/mean_plane.py -dr "$expdir" -ind_s 376 -ind_e 500 --avg_planes
+    python /home/mikapm/Github/wass-pyfuns/pywass/mean_plane.py -dr "$expdir" -ind_s 401 -ind_e 500 --avg_planes
     #
     # Run the gridding. Use batches to run in parallel #
     echo " "
