@@ -110,6 +110,10 @@ def parse_args(**kwargs):
             type=float,
             default=-9999.,
             )
+    parser.add_argument("--imgrid", 
+            help=("Also make geo-rectified grayscale image grid projected to stereo grid?"),
+            action='store_true'
+            )
 
     return parser.parse_args(**kwargs)
 
