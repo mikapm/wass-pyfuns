@@ -309,7 +309,7 @@ class WASS_launcher():
 
         # Loop over all output working directories after N and remove files
         for outdir in self.input_frames['wd'][N:]:
-            print('Removing excessive files from {}'.format(outdir))
+            # print('Removing excessive files from {}'.format(outdir))
             [os.remove(os.path.join(outdir,f)) for f in files_to_remove]
 
 
