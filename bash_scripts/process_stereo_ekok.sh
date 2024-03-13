@@ -65,7 +65,7 @@ for datetime in "${@:3}"; do
     # Run the processing #
     echo " "
     echo "Running WASS ..."
-    python /home/mikapm/Github/wass-pyfuns/pywass/wass_launch.py -dr "$expdir" -pc "$ncores"
+    python /home/mikapm/Github/wass-pyfuns/pywass/wass_launch.py -dr "$expdir" -pc "$ncores" -defn 2
     #
     # Calculate mean planes. Use batches to run in parallel #
     echo " "
@@ -75,22 +75,24 @@ for datetime in "${@:3}"; do
     python /home/mikapm/Github/wass-pyfuns/pywass/mean_plane.py -dr "$expdir" -ind_s 251 -ind_e 375 &
     python /home/mikapm/Github/wass-pyfuns/pywass/mean_plane.py -dr "$expdir" -ind_s 376 -ind_e 500 &
     wait # This will wait until all above scripts finish
-    # Average planes
+    # Average batched planes
     echo " "
     echo "Averaging planes ..."
     python /home/mikapm/Github/wass-pyfuns/pywass/mean_plane.py -dr "$expdir" -ind_s 376 -ind_e 500 --avg_planes
     #
-    # Run the gridding #
+    # Run the gridding. Use batches to run in parallel #
     echo " "
     echo "Running gridding ..."
-    python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$expdir" -date "$datetime" -dxy 0.5 -ind_s 0 -ind_e 125 &
-    python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$expdir" -date "$datetime" -dxy 0.5 -ind_s 126 -ind_e 250 &
-    python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$expdir" -date "$datetime" -dxy 0.5 -ind_s 251 -ind_e 375 &
-    python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$expdir" -date "$datetime" -dxy 0.5 -ind_s 376 -ind_e 500 &
+    python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$expdir" -date "$datetime" -dxy 0.5 -ind_s 0 -ind_e 10 &
+    python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$expdir" -date "$datetime" -dxy 0.5 -ind_s 11 -ind_e 20 &
+    # python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$expdir" -date "$datetime" -dxy 0.5 -ind_s 0 -ind_e 125 &
+    # python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$expdir" -date "$datetime" -dxy 0.5 -ind_s 126 -ind_e 250 &
+    # python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$expdir" -date "$datetime" -dxy 0.5 -ind_s 251 -ind_e 375 &
+    # python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$expdir" -date "$datetime" -dxy 0.5 -ind_s 376 -ind_e 500 &
     wait # This will wait until all above scripts finish
     #
     # Delete the input directory that was created, which contains a tif version of every image for both cams #
-    # rm -rf "${expdir}/input"
+    # rm -r "${expdir}"/input
     #
     # Make a softlink to the nc file in the dist directory #
     # Note: if no /grid/wass.nc file was made, the datetime is skipped, won't show up in dist
