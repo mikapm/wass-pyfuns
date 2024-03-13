@@ -313,7 +313,6 @@ if not os.path.isfile(fn_nc):
             if args.imgrid:
                 # u pixel coordinates
                 # print('Gridding u pixel coordinates \n')
-                print('{} {} {}'.format(pt2d_subs.shape, vertices.shape, weights.shape))
                 _, _, iR = WL.mesh_to_grid(pt2d_subs[:,0], dx=args.dxy, dy=args.dxy, 
                         xlim=(args.xmin, args.xmax+1), ylim=(args.ymin, args.ymax+1),
                         vertices=vertices, weights=weights)
@@ -409,7 +408,6 @@ if not os.path.isfile(fn_nc):
                               "_FillValue": -32767,
                               }
     # Save netcdf
-    print('Saving netcdf ...')
     ds.to_netcdf(fn_nc, encoding=encoding)
 
     if args.imgrid:
@@ -449,12 +447,7 @@ if not os.path.isfile(fn_nc):
                 encoding[k] = {'_FillValue': args.fillvalue}
 
         # Save netcdf
-        print('Saving imgrid netcdf ...')
         dsi.to_netcdf(fn_nc_img, encoding=encoding)
 
 # Read netcdf
 # ds = xr.decode_cf(xr.open_dataset(fn_nc, decode_coords='all'))
-
-print(' ')
-print('Done.')
-
