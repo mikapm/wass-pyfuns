@@ -96,5 +96,6 @@ for datetime in "${@:3}"; do
     #     ln -rs "$expdir"/grid/wass.nc "$distdir"/"$d"_"$t"_wass.nc 
     # fi
     #
+    echo " "
     echo "Processing done for ""$expdir"
 done
