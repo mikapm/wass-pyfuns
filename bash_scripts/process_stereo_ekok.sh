@@ -38,9 +38,9 @@ for datetime in "${@:3}"; do
         mkdir "$expdir_base"
     fi
     # Check if expdir exists 
-    if [ ! -d "$expdir_base" ]; then
-        echo "$expdir_base does not exist, generating it ..."
-        mkdir "$expdir_base"
+    if [ ! -d "$expdir" ]; then
+        echo "$expdir does not exist, generating it ..."
+        mkdir "$expdir"
     fi
     #
     # Copy over config folder (assuming it exists in $rootdir)
@@ -83,7 +83,11 @@ for datetime in "${@:3}"; do
     # Run the gridding #
     echo " "
     echo "Running gridding ..."
-    python wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$expdir" -date "$datetime" -dxy 0.5 
+    python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$expdir" -date "$datetime" -dxy 0.5 -ind_s 0 -ind_e 125 &
+    python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$expdir" -date "$datetime" -dxy 0.5 -ind_s 126 -ind_e 250 &
+    python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$expdir" -date "$datetime" -dxy 0.5 -ind_s 251 -ind_e 375 &
+    python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$expdir" -date "$datetime" -dxy 0.5 -ind_s 376 -ind_e 500 &
+    wait # This will wait until all above scripts finish
     #
     # Delete the input directory that was created, which contains a tif version of every image for both cams #
     # rm -rf "${expdir}/input"
