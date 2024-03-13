@@ -254,6 +254,7 @@ if __name__ == '__main__':
         fn_all = os.path.join(WL.data_root, 'plane_avg_all.txt')
         fn_sub = os.path.join(WL.data_root, 'plane_avg_sub.txt')
         if not os.path.isfile(fn_pipe) or not os.path.isfile(fn_all) or not os.path.isfile(fn_sub):
+            print('Averaging planes ...')
             # print('Averaging planes and saving \n')
             # List all available plane files, concatenate and average
             planefiles_pipe = sorted(glob.glob(os.path.join(WL.planedir, 'planes_pipe*.txt')))
