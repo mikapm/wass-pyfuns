@@ -18,11 +18,8 @@ import pandas as pd
 import xarray as xr
 import cv2
 from tqdm import tqdm
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-import matplotlib.image as mpimg
+from datetime import datetime as DT
 from cftime import date2num
-import cmocean.cm as cmo
 from argparse import ArgumentParser
 from pywass import wass_load as wlo
 from pywass.mesh_to_ncgrid import interp_weights
@@ -36,22 +33,16 @@ def parse_args(**kwargs):
     parser.add_argument("-dr", 
             help=("WASS experiment root directory."),
             type=str,
-            default='/home/mikapm/Github/wass/test/hopkins_20231001',
+            default='/home/mikapm/Github/wass/test/ekok_20220916',
             )
-    parser.add_argument("-exp", 
-            help=("Experiment name for output .nc filename."),
+    parser.add_argument("-date", 
+            help=("Acquisition period start date+time, yyyymmddHHMM"),
             type=str,
-            default='test1',
-            )
-    parser.add_argument("-fn_root", 
-            help=("Start string for output .nc filename"),
-            type=str,
-            default='wass',
             )
     parser.add_argument("-dxy", 
             help=("Grid resolution (in x and y) in meters."),
             type=float,
-            default=0.75,
+            default=0.5,
             )
     parser.add_argument("-iw", 
             help=("Image width in pixels."),
@@ -131,28 +122,56 @@ outdir = os.path.join(rootdir, 'grid') # Output grid dir
 if not os.path.isdir(outdir):
     # Make grid dir if it does not exist
     os.mkdir(outdir)
+
+# Initialize WASS_load object
+WL = wlo.WASS_load(rootdir, plane=args.plane, scale=args.baseline)
+# Load plane file for saving in output dataset
+planefile = os.path.join(WL.data_root,
+        'plane_avg_{}.txt'.format(WL.plane))
+plane = np.loadtxt(planefile)
+
+# If ind_e=-1, process only selected range of workdirs
+if args.ind_e > 0:
+    # Make sure that ind_s < ind_e
+    assert (args.ind_s < args.ind_e), ('-ind_s must be smaller than -ind_e')
+    # Check how many workdirs N, and is -ind_s/-ind_e > N
+    N = len(WL.wd)
+    if args.ind_s >= N:
+        # Nothing to process
+        sys.exit(0)
+    if args.ind_e > N:
+        # Set end index to last available workdir
+        i1 = N
+    else:
+        i1 = args.ind_e
+    # Only use requested range of workdirs
+    i0 = args.ind_s # start ind
+else:
+    # Process all workdirs
+    i0 = 0
+    i1 = len(WL.wd)
+
 # Output netcdf filename
-fn_nc = os.path.join(outdir, '{}_{}.nc'.format(args.fn_root, args.exp))
+datestr = args.date[:8]
+timestr = args.date[8:]
+dxystr = int(args.dxy * 100) # grid resolution in cm
+if args.ind_e > 0:
+    indstr = f'_{i0}_{i1}' # Mark start/end indices of chunking
+else:
+    indstr = '' # No indices, save grid for full period in one file
+fn_nc = os.path.join(outdir, 
+                     'xygrid_{}cm_{}_{}_plane_{}{}.nc'.format(
+                         dxystr, datestr, timestr, args.plane, indstr)
+                     )
 
 # Check if netcdf file already exists
 if not os.path.isfile(fn_nc):
-    # Initialize WASS_load object
-    WL = wlo.WASS_load(rootdir, plane=args.plane, scale=args.baseline)
-    # Load plane file for saving in output dataset
-    planefile = os.path.join(WL.data_root,
-            'plane_avg_{}.txt'.format(WL.plane))
-    plane = np.loadtxt(planefile)
 
-    # Use image filenames to get time array. Use cam1 timestamps by default.
-    timestamps = [] # Empty list to store timestamps
-    t0 = pd.Timestamp('1970-01-01 00:00:00') # Camera clock start time
-    for fn in WL.in_cam1:
-        sec = os.path.split(fn)[1].split('_')[1][:10] # seconds cam1
-        ms = os.path.split(fn)[1].split('_')[1][10:] # milliseconds cam1
-        # Construct timestamp
-        ts = t0 + pd.Timedelta(seconds=int(sec)) + pd.Timedelta(milliseconds=int(ms))
-        # Append to list
-        timestamps.append(ts)
+
+
+
+    # Get first timestamp
+    ts0 = WL.timestamp_from_fname(0)
 
     # Construct pd.DataFrame for conversion of timestamps to numerical format
     df = pd.DataFrame(data=np.zeros(len(timestamps)), index=np.array(timestamps))
@@ -166,12 +185,13 @@ if not os.path.isfile(fn_nc):
 
     # Initialize common x,y grids
     xgrid, ygrid = np.mgrid[args.xmin:args.xmax+1:args.dxy, 
-        args.ymin:args.ymax+1:args.dxy]
+                            args.ymin:args.ymax+1:args.dxy
+                            ]
     # xy_grid needed for computing vertices and weights for interpolation
-    xy_grid = np.vstack((xgrid.flatten(),ygrid.flatten())).T
+    xy_grid = np.vstack((xgrid.flatten(), ygrid.flatten())).T
 
     # Initialize output xr.Dataset for saving as netcdf
-    nt = len(timestamps) # no. of timestamps
+    nt = len(time_vals) # no. of timestamps
     # nx = int((args.xmax - args.xmin) / args.dxy + 1) # no. of x grid points
     ny = int((args.ymax - args.ymin) / args.dxy + 1) # no. of y grid points
     # xs = np.linspace(args.xmin, args.xmax, nx) # x array (1D)
@@ -199,8 +219,6 @@ if not os.path.isfile(fn_nc):
                 ),
         )
 
-
-
     # Iterate over WASS output working directories (wd) and grid point clouds
     for i, wd in tqdm(enumerate(tqdm(WL.wd))):
         if os.path.isfile(os.path.join(wd, 'mesh_cam.xyzC')):
@@ -223,7 +241,7 @@ if not os.path.isfile(fn_nc):
             if args.step > 0:
                 # Subsample aligned mesh in the near-field for faster interpolation
                 # following Grid_surfaces_wass.m
-                print('Subsampling mesh for faster interpolation ... \n')
+                # print('Subsampling mesh for faster interpolation ... \n')
                 dummy = (args.ymax - args.ymin) / args.step
                 y_min = args.ymin - 0.1
                 for step_d in range(1, args.step+2):
@@ -296,10 +314,7 @@ if not os.path.isfile(fn_nc):
     ds.Y_grid.attrs['standard_name'] = 'projection_y_coordinate'
     ds.Y_grid.attrs['long_name'] = 'y grid in local camera coordinate system'
     # Globl attributes
-    ds.attrs['summary'] =  ("Stereo video from ROXSI II experiment at Hopkins " + 
-                            "Marine Station in Monterey, CA.")
-    ds.attrs['cam0 lens serial number'] =  args.ser_cam0
-    ds.attrs['cam1 lens serial number'] =  args.ser_cam1
+    ds.attrs['summary'] =  ("Ekofisk stereo video data by MET Norway")
     ds.attrs['image_width'] = args.iw
     ds.attrs['image_height'] = args.ih
     ds.attrs['zmin'] = ds.Z.min().item()
@@ -319,6 +334,7 @@ if not os.path.isfile(fn_nc):
         encoding[k] = {'_FillValue': args.fillvalue}
 
     # Save netcdf
+    print('Saving netcdf ...')
     ds.to_netcdf(fn_nc, encoding=encoding)
 
 # Read netcdf
