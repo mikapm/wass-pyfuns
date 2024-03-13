@@ -56,6 +56,18 @@ for datetime in "${@:3}"; do
         echo "$inputdir"" does not exist, generating it ..."
         mkdir "$inputdir"
     fi
+    # Check if mean plane dir. exists
+    planedir="$expdir"/planes
+    if [ ! -d "$planedir" ]; then
+        echo "$planedir"" does not exist, generating it ..."
+        mkdir "$planedir"
+    fi
+    # Check if grid dir. exists
+    griddir="$expdir"/grid
+    if [ ! -d "$griddir" ]; then
+        echo "$griddir"" does not exist, generating it ..."
+        mkdir "$griddir"
+    fi
     # Run file conversion raw -> tif (assuming raw frames in expdir/raw folder)
     echo " "
     echo "Converting frames ..."
@@ -69,10 +81,11 @@ for datetime in "${@:3}"; do
     # Calculate mean planes. Use batches to run in parallel #
     echo " "
     echo "Computing mean planes ..."
-    python /home/mikapm/Github/wass-pyfuns/pywass/mean_plane.py -dr "$expdir" -ind_s 0 -ind_e 125 &
-    python /home/mikapm/Github/wass-pyfuns/pywass/mean_plane.py -dr "$expdir" -ind_s 126 -ind_e 250 &
-    python /home/mikapm/Github/wass-pyfuns/pywass/mean_plane.py -dr "$expdir" -ind_s 251 -ind_e 375 &
-    python /home/mikapm/Github/wass-pyfuns/pywass/mean_plane.py -dr "$expdir" -ind_s 376 -ind_e 500 &
+    python /home/mikapm/Github/wass-pyfuns/pywass/mean_plane.py -dr "$expdir" -ind_s 0 -ind_e 100 &
+    python /home/mikapm/Github/wass-pyfuns/pywass/mean_plane.py -dr "$expdir" -ind_s 101 -ind_e 200 &
+    python /home/mikapm/Github/wass-pyfuns/pywass/mean_plane.py -dr "$expdir" -ind_s 201 -ind_e 300 &
+    python /home/mikapm/Github/wass-pyfuns/pywass/mean_plane.py -dr "$expdir" -ind_s 301 -ind_e 400 &
+    python /home/mikapm/Github/wass-pyfuns/pywass/mean_plane.py -dr "$expdir" -ind_s 401 -ind_e 500 &
     wait # This will wait until all above scripts finish
     # Average batched planes
     python /home/mikapm/Github/wass-pyfuns/pywass/mean_plane.py -dr "$expdir" -ind_s 376 -ind_e 500 --avg_planes
@@ -80,10 +93,11 @@ for datetime in "${@:3}"; do
     # Run the gridding. Use batches to run in parallel #
     echo " "
     echo "Running gridding ..."
-    python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$rootdir" -date "$datetime" -dxy 0.5 -ind_s 0 -ind_e 125 --imgrid &
-    python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$rootdir" -date "$datetime" -dxy 0.5 -ind_s 126 -ind_e 250 --imgrid &
-    python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$rootdir" -date "$datetime" -dxy 0.5 -ind_s 251 -ind_e 375 --imgrid &
-    python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$rootdir" -date "$datetime" -dxy 0.5 -ind_s 376 -ind_e 500 --imgrid &
+    python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$rootdir" -date "$datetime" -dxy 0.5 -ind_s 0 -ind_e 100 -step 5 --imgrid &
+    python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$rootdir" -date "$datetime" -dxy 0.5 -ind_s 101 -ind_e 200 -step 5 --imgrid &
+    python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$rootdir" -date "$datetime" -dxy 0.5 -ind_s 201 -ind_e 300 -step 5 --imgrid &
+    python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$rootdir" -date "$datetime" -dxy 0.5 -ind_s 301 -ind_e 400 -step 5 --imgrid &
+    python /home/mikapm/Github/wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$rootdir" -date "$datetime" -dxy 0.5 -ind_s 401 -ind_e 500 -step 5 --imgrid &
     wait # This will wait until all above scripts finish
     #
     # Delete the input directory that was created, which contains a tif version of every image for both cams #
