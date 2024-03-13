@@ -391,7 +391,7 @@ if __name__ == '__main__':
     if not args.overwrite:
         outbasedir = os.path.join(WL.data_root, 'out')
         if os.path.isdir(outbasedir):
-            print('Output dir. already exists -> exiting script ...')
+            print('Output dir. already exists -> exiting WASS launch script ...')
             sys.exit(0)
     
     # Time the entire processing
