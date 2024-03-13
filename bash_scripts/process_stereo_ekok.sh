@@ -1,21 +1,26 @@
 #!/bin/bash
-
+#
 # Script to run all WASS processing steps sequentially:
-# Processing, mean-plane estimation and gridding
+# Image conversion, processing, mean-plane estimation and gridding
 # Command line input arguments: 
-# 1. Path to root directory
+# 1. Path to root experiment directory
 # 2. Number of cores to parallelize processing with
 # 3. and higher: date-time strings (format: yyyymmddHHMM)
-
+#
 # Example (parallelized with 6 cores, 2022/09/16 16:00-16:20):
 # ./process_stereo_ekok.sh /path/to/experiment_root/ 6 202209161600
-
+#
+# Note that the mean plane estimation and gridding are processed in
+# parallelized chunks in this script. To disable the chunking, 
+# remove the -ind_s and -ind_e input arguments from the relevant
+# python script calls.
+#
 rootdir="$1"
 ncores="$2"
-
+#
 # Loop over requested datetimes
 for datetime in "${@:3}"; do
-
+    #
     # Set inputs #
     d=${datetime:0:8} # date string
     t=${datetime:8:13} # time string
@@ -26,7 +31,7 @@ for datetime in "${@:3}"; do
     echo "start time: ""$t"
     echo "Experiment directory: ""$expdir"
     echo " "
-
+    #
     # Check if expdir_base exists
     if [ ! -d "$expdir_base" ]; then
         echo "$expdir_base does not exist, generating it ..."
@@ -37,7 +42,7 @@ for datetime in "${@:3}"; do
         echo "$expdir_base does not exist, generating it ..."
         mkdir "$expdir_base"
     fi
-
+    #
     # Copy over config folder (assuming it exists in $rootdir)
     configdir="$expdir"/config
     # Check if config dir. exists 
@@ -45,7 +50,7 @@ for datetime in "${@:3}"; do
         echo "Copying over config folder to ""$configdir"
         cp -r "$rootdir"/config "$expdir"/config
     fi
-
+    #
     # Check if input image dir. (for WASS) exists
     inputdir="$expdir"/input
     if [ ! -d "$inputdir" ]; then
@@ -56,12 +61,12 @@ for datetime in "${@:3}"; do
     echo " "
     echo "Converting frames ..."
     # python /home/mikapm/Github/wass-pyfuns/pywass/prep_images.py "$expdir"/raw -outdir $inputdir
-
+    #
     # Run the processing #
     echo " "
     echo "Running WASS ..."
     python /home/mikapm/Github/wass-pyfuns/pywass/wass_launch.py -dr "$expdir" -pc "$ncores"
-
+    #
     # Calculate mean planes. Use batches to run in parallel #
     echo " "
     echo "Computing mean planes ..."
@@ -74,20 +79,20 @@ for datetime in "${@:3}"; do
     echo " "
     echo "Averaging planes ..."
     python /home/mikapm/Github/wass-pyfuns/pywass/mean_plane.py -dr "$expdir" -ind_s 376 -ind_e 500 --avg_planes
-
-    # # Run the gridding #
-    # echo " "
-    # echo "Running gridding ..."
-    # python wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr $expdir -dxy $dxy -xmin -60 -xmax 70 -ymin -180 -ymax -60
-
+    #
+    # Run the gridding #
+    echo " "
+    echo "Running gridding ..."
+    python wass-pyfuns/pywass/mesh_to_ncgrid_v2_ekok.py -dr "$expdir" -date "$datetime" -dxy 0.5 
+    #
     # Delete the input directory that was created, which contains a tif version of every image for both cams #
     # rm -rf "${expdir}/input"
-
+    #
     # Make a softlink to the nc file in the dist directory #
     # Note: if no /grid/wass.nc file was made, the datetime is skipped, won't show up in dist
     # if test -f "$expdir"/grid/wass.nc; then
     #     distdir="path/stereo/dist"
     #     ln -rs "$expdir"/grid/wass.nc "$distdir"/"$d"_"$t"_wass.nc 
     # fi
-
+    #
 done
