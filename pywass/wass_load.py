@@ -510,8 +510,6 @@ class WASS_load():
 
         return Nil
 
-
-
         
     def project_mesh_to_cam(self, idx=1, plane=None, mesh=None, cam=1,
                             print_msg=False):
