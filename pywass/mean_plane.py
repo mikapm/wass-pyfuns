@@ -241,9 +241,6 @@ if __name__ == '__main__':
                 planes_sub[i-i0,:] = plane_sub
 
         # Save all planes
-        print(' ')
-        print('Saving planes \n')
-
         np.savetxt(fn_planes_pipe, planes_pipe)
         np.savetxt(fn_planes_all, planes_all)
         np.savetxt(fn_planes_sub, planes_sub)
