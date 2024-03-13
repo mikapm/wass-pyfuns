@@ -57,12 +57,12 @@ def parse_args(**kwargs):
     parser.add_argument("-xmin", 
             help=("Lower grid x limit."),
             type=float,
-            default=-70,
+            default=-75,
             )
     parser.add_argument("-xmax", 
             help=("Upper grid x limit."),
             type=float,
-            default=70,
+            default=60,
             )
     parser.add_argument("-ymin", 
             help=("Lower grid y limit. (y decreases outwards from platform)"),
@@ -121,7 +121,9 @@ def parse_args(**kwargs):
 args = parse_args(args=sys.argv[1:])
 
 # Directories etc.
-rootdir = os.path.join(args.dr, args.exp)
+datestr = args.date[:8]
+timestr = args.date[8:]
+rootdir = os.path.join(args.dr, datestr, timestr)
 outdir = os.path.join(rootdir, 'grid') # Output grid dir
 if not os.path.isdir(outdir):
     # Make grid dir if it does not exist
@@ -141,7 +143,7 @@ if args.ind_e > 0:
     # Check how many workdirs N, and is -ind_s/-ind_e > N
     N = len(WL.wd)
     if args.ind_s >= N:
-        # Nothing to process
+        # Nothing to process -> exit script
         sys.exit(0)
     if args.ind_e > N:
         # Set end index to last available workdir
@@ -156,8 +158,6 @@ else:
     i1 = len(WL.wd)
 
 # Output netcdf filename
-datestr = args.date[:8]
-timestr = args.date[8:]
 dxystr = int(args.dxy * 100) # grid resolution in cm
 if args.ind_e > 0:
     indstr = f'_{i0}_{i1}' # Mark start/end indices of chunking
@@ -167,16 +167,22 @@ fn_nc = os.path.join(outdir,
                      'xygrid_{}cm_{}_{}_plane_{}{}.nc'.format(
                          dxystr, datestr, timestr, args.plane, indstr)
                      )
+if args.imgrid:
+        # Image grid filename
+        fn_nc_img = os.path.join(outdir, 
+                             'imgrid_{}cm_{}_{}_plane_{}{}.nc'.format(
+                                     dxystr, datestr, timestr, args.plane, indstr)
+                             )
 
 # Check if netcdf file already exists
 if not os.path.isfile(fn_nc):
-
-
-
-
     # Get first timestamp
     ts0 = WL.timestamp_from_fname(0)
-
+    # Iterate over WASS output working directories (wd) and get timestamps
+    timestamps = [] # Empty list to store timestamps
+    for i, wd in enumerate(WL.wd[i0:i1], i0):
+        ts = WL.timestamp_from_fname(i)
+        timestamps.append(ts)
     # Construct pd.DataFrame for conversion of timestamps to numerical format
     df = pd.DataFrame(data=np.zeros(len(timestamps)), index=np.array(timestamps))
 
@@ -222,9 +228,24 @@ if not os.path.isfile(fn_nc):
                 iw = (['iw'], np.arange(args.iw)),
                 ),
         )
+    # Reproject raw frames to stereo grid?
+    if args.imgrid:
+        # Initialize imgrid dataset
+        dsi = xr.Dataset(
+                data_vars=dict(
+                        im_grid = (['time', 'X', 'Y'], np.ones((nt, nx, ny))*np.nan),
+                        X_grid = (['X', 'Y'], xgrid),
+                        Y_grid = (['X', 'Y'], ygrid),
+                        ),
+                coords=dict(
+                        time = (['time'], time_vals),
+                        X = (['X'], xs),
+                        Y = (['Y'], ys),
+                        ),
+                )
 
     # Iterate over WASS output working directories (wd) and grid point clouds
-    for i, wd in tqdm(enumerate(tqdm(WL.wd))):
+    for i, wd in enumerate(tqdm(WL.wd[i0:i1]), i0):
         if os.path.isfile(os.path.join(wd, 'mesh_cam.xyzC')):
             # Load mesh
             mesh = WL.load_camera_mesh(idx=i)
@@ -237,8 +258,9 @@ if not os.path.isfile(fn_nc):
             # Exclude points outside xmin, xmax & ymin, ymax
             x, y, z = mesh_al.T
             mesh_al = mesh_al[(x>args.xmin) & (x<args.xmax) & \
-                    (y>args.ymin) & (y<args.ymax), :]
-            pt2d = pt2d[(x>args.xmin) & (x<args.xmax) & (y>args.ymin) & (y<args.ymax),:]
+                              (y>args.ymin) & (y<args.ymax), :]
+            pt2d = pt2d[(x>args.xmin) & (x<args.xmax) & \
+                        (y>args.ymin) & (y<args.ymax), :]
             # x,y,z coordinates from (reduced) aligned mesh
             x, y, z = mesh_al.T
 
@@ -275,7 +297,8 @@ if not os.path.isfile(fn_nc):
                     xlim=(args.xmin, args.xmax+1), ylim=(args.ymin, args.ymax+1),
                     vertices=vertices, weights=weights)
             # Save eta grid to netcdf
-            ds.Z[i,:,:] = etagrid
+            ts = WL.timestamp_from_fname(i) # Current timestamp
+            ds.Z[i-i0,:,:] = etagrid
             # ds.Z.iloc[dict(time=i)] = etagrid
             
             # Also save compressed cam0 raw image in JPG format
@@ -283,8 +306,33 @@ if not os.path.isfile(fn_nc):
             im0 = cv2.imread(fn_cam0, cv2.IMREAD_GRAYSCALE)
             # Compress to jpg
             # ret, imgjpeg = cv2.imencode('.jpg', im0)
-            ds.cam0images[i,:,:] = im0
+            ds.cam0images[i-i0,:,:] = im0
             # ds.cam0images.iloc[dict(time=i)] = imgjpeg
+
+            # Also project raw (right-camera) image to stereo grid?
+            if args.imgrid:
+                # u pixel coordinates
+                # print('Gridding u pixel coordinates \n')
+                print('{} {} {}'.format(pt2d_subs.shape, vertices.shape, weights.shape))
+                _, _, iR = WL.mesh_to_grid(pt2d_subs[:,0], dx=args.dxy, dy=args.dxy, 
+                        xlim=(args.xmin, args.xmax+1), ylim=(args.ymin, args.ymax+1),
+                        vertices=vertices, weights=weights)
+                iR = np.array(iR).astype(np.float32)
+
+                # v pixel coordinates
+                # print('Gridding v pixel coordinates \n')
+                _, _, jR = WL.mesh_to_grid(pt2d_subs[:,1], dx=args.dxy, dy=args.dxy, 
+                        xlim=(args.xmin, args.xmax+1), ylim=(args.ymin, args.ymax+1),
+                        vertices=vertices, weights=weights)
+                jR = np.array(jR).astype(np.float32)
+
+                # Load undistorted right camera image
+                imfn = os.path.join(WL.wd[i], 'undistorted', '00000001.png')
+                im = cv2.imread(imfn, 0)
+                # Remap input image to aligned mesh projection using iR and jR
+                imgrid = cv2.remap(im, iR, jR, cv2.INTER_LINEAR)
+                # Save im grid to netcdf
+                dsi.im_grid[i-i0, :,:] = imgrid
 
 #     # wassncplot 'meta' attributes
 #     ds.meta['p0plane'] = WL.plane
@@ -337,12 +385,75 @@ if not os.path.isfile(fn_nc):
     for k in list(ds.keys()):
         encoding[k] = {'_FillValue': args.fillvalue}
 
+    # Encoding for cam0images compression (to float16)
+    def compute_scale_and_offset(da, n=16):
+        """
+        Calculate offset and scale factor for int conversion
+        Based on Krios101's code above.
+        Borrowed from user naught101 at
+        https://stackoverflow.com/questions/57179990/compression-of-arrays-in-netcdf-file
+        """
+        vmin = np.min(da).item()
+        vmax = np.max(da).item()
+        # stretch/compress data to the available packed range
+        scale_factor = (vmax - vmin) / (2 ** n - 1)
+        # translate the range to be symmetric about zero
+        add_offset = vmin + 2 ** (n - 1) * scale_factor
+        return scale_factor, add_offset
+    # Scale factor & offset
+    scale_factor, add_offset = compute_scale_and_offset(ds['cam0images'])
+    # Edit encoding for cam0images variable
+    encoding['cam0images'] = {"dtype": 'int16', 
+                              "scale_factor": scale_factor,
+                              "add_offset": add_offset,
+                              "_FillValue": -32767,
+                              }
     # Save netcdf
     print('Saving netcdf ...')
     ds.to_netcdf(fn_nc, encoding=encoding)
 
+    if args.imgrid:
+        # Units & attributes
+        dsi.time.encoding['units'] = time_units
+        dsi.time.attrs['units'] = time_units
+        dsi.time.attrs['standard_name'] = 'time'
+        dsi.time.attrs['long_name'] = 'Right camera frame timestamp (UTC)'
+        # Reconstructed sea surface
+        dsi.im_grid.attrs['units'] = 'px'
+        dsi.im_grid.attrs['standard_name'] = 'pixel_intensity'
+        dsi.im_grid.attrs['long_name'] = 'Right-camera raw frame reprojected onto sea surface grid'
+        # x,y 
+        dsi.X.attrs['units'] = 'm'
+        dsi.X.attrs['standard_name'] = 'projection_x_coordinate'
+        dsi.X.attrs['long_name'] = 'x coordinate in local camera coordinate system'
+        dsi.Y.attrs['units'] = 'm'
+        dsi.Y.attrs['standard_name'] = 'projection_y_coordinate'
+        dsi.Y.attrs['long_name'] = 'y coordinate in local camera coordinate system'
+        # x,y grids
+        dsi.X_grid.attrs['units'] = 'm'
+        dsi.X_grid.attrs['standard_name'] = 'projection_x_coordinate'
+        dsi.X_grid.attrs['long_name'] = 'x grid in local camera coordinate system'
+        dsi.Y_grid.attrs['units'] = 'm'
+        dsi.Y_grid.attrs['standard_name'] = 'projection_y_coordinate'
+        dsi.Y_grid.attrs['long_name'] = 'y grid in local camera coordinate system'
+        # Globl attributes
+        dsi.attrs['summary'] =  ("Ekofisk stereo video raw images reprojected to stereo grid")
+
+        # Set netcdf encoding before saving
+        encoding = {'time': {'zlib': False, '_FillValue': None},
+                    'X': {'zlib': False, '_FillValue': None},
+                    'Y': {'zlib': False, '_FillValue': None},
+                    }     
+        # Set variable fill values
+        for k in list(dsi.keys()):
+                encoding[k] = {'_FillValue': args.fillvalue}
+
+        # Save netcdf
+        print('Saving imgrid netcdf ...')
+        dsi.to_netcdf(fn_nc_img, encoding=encoding)
+
 # Read netcdf
-ds = xr.decode_cf(xr.open_dataset(fn_nc, decode_coords='all'))
+# ds = xr.decode_cf(xr.open_dataset(fn_nc, decode_coords='all'))
 
 print(' ')
 print('Done.')
