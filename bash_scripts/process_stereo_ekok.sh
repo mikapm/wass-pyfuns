@@ -15,8 +15,12 @@
 # remove the -ind_s and -ind_e input arguments from the relevant
 # python script calls.
 #
-rootdir="$1"
-ncores="$2"
+rootdir="$1" # 1st input arg
+ncores="$2" # 2nd input arg
+#
+# Activate conda environment for https://github.com/mikapm/wass-pyfuns
+eval "$(conda shell.bash hook)"
+conda activate wass
 #
 # Loop over requested datetimes
 for datetime in "${@:3}"; do
@@ -76,7 +80,7 @@ for datetime in "${@:3}"; do
     # Run the WASS processing #
     echo " "
     echo "Running WASS ..."
-    python /home/mikapm/Github/wass-pyfuns/pywass/wass_launch.py -dr "$expdir" -pc "$ncores" -defn 2
+    python /home/mikapm/Github/wass-pyfuns/pywass/wass_launch.py -dr "$expdir" -pc "$ncores" 
     #
     # Calculate mean planes. Use batches to run in parallel #
     echo " "
