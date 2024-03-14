@@ -8,8 +8,7 @@ import sys
 import glob
 import numpy as np
 from tqdm import tqdm
-import wass_load as wlo
-
+from pywass import wass_load as wlo
 
 def compute_similarity(mesh):
     """
