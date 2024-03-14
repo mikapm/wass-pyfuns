@@ -5,6 +5,7 @@ dependencies:
   - python=3.9.14
   - ipython
   - jupyter
+  - pocl
   - numpy
   - numba=0.56.4
   - scipy
@@ -13,6 +14,7 @@ dependencies:
   - pint-xarray
   - pint
   - matplotlib
+  - hvplot
   - cmocean
   - scikit-learn
   - scikit-image
