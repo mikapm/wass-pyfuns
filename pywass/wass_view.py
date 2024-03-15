@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """
 WASS output viewer script for visual quality control.
+
+Example (xygrid & imgrid; time indices 10-30; zoomed in on center of FOV):
+python wass_view.py -date 202209161600 -i0 10 -i1 30 -xmin -45 -xmax 35 -ymin -120 -ymax -80 --imgrid
 """
 import os 
 import sys 
