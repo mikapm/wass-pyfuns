@@ -15,6 +15,8 @@ def julian_day_number_to_gregorian(jdn):
     """
     Convert the Julian Day Number to the proleptic Gregorian 
     Year, Month, Day.
+    Borrowed from
+    https://orbital-mechanics.space/reference/julian-date.html
     """
     L = jdn + 68569
     N = int(4 * L / 146_097)
@@ -32,6 +34,8 @@ def julian_date_to_gregorian(jd):
     """
     Convert a decimal Julian Date to the equivalent proleptic 
     Gregorian date and time (UTC).
+    Borrowed from
+    https://orbital-mechanics.space/reference/julian-date.html
     """
     jdn = int(jd)
     year, month, day = julian_day_number_to_gregorian(jdn)
@@ -78,7 +82,7 @@ def sunrise_sunset(date, lat=56.549197, lon=3.209986):
     # Declination of the Sun (rad)
     delta = np.arcsin(np.sin(lr) * np.sin(np.deg2rad(23.4397)))
     # Hour angle omega_0 (deg)
-    nom = np.sin(np.deg2rad(-0.833)) - np.sin(latr) * np.sin(delta)
+    nom = np.sin(np.deg2rad(-0.833)) - np.sin(latr)*np.sin(delta)
     denom = np.cos(latr) * np.cos(delta)
     omega_0 = np.rad2deg(np.arccos(nom / denom))
     # Calculate sunrise and sunset
