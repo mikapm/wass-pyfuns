@@ -125,3 +125,6 @@ if __name__ == '__main__':
     # Get sunrise + sunset times
     sunrise, sunset = sunrise_sunset(date, args.lat, args.lon)
     print('sunrise: {}, sunset: {}'.format(sunrise, sunset))
+
+    # Make list of daylight hours (for stereo video scheduling)
+    daylight_hours = np.arange(sunrise.hour+1, sunset.hour)
