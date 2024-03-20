@@ -43,7 +43,7 @@ def julian_date_to_gregorian(jd):
     dt = DT(year=year, month=month, day=day, tzinfo=timezone.utc)
     return dt + offset
 
-def sunrise_sunset(date, lat=56.549197, lon=3.209986):
+def sunrise_sunset(date, lat=56.549197, lon=3.209986, utc=True):
     """
     Compute sunrise/set hours (UTC) for date + location given 
     by lat, lon (in decimal degrees) following example in
@@ -57,6 +57,8 @@ def sunrise_sunset(date, lat=56.549197, lon=3.209986):
         lon - float; longitude of location (decimal deg)
                      (west is negative, east is positive)
                      Default: Ekofisk lon.
+        utc - bool; if True returns UTC times, otherwise 
+                    returns local times based on lat, lon
     Returns:
         sunrise - datetime.datetime obj. (timezone UTC)
         sunset - datetime.datetime obj. (timezone UTC)
@@ -91,6 +93,20 @@ def sunrise_sunset(date, lat=56.549197, lon=3.209986):
     # Convert to UTC 
     sunrise = (julian_date_to_gregorian(jrise))
     sunset = (julian_date_to_gregorian(jset))
+    # Convert to local timezone?
+    if not utc:
+        import pytz
+        from timezonefinder import TimezoneFinder
+        # Get timezone for requested location
+        tf = TimezoneFinder() # Init class
+        tzn = tf.timezone_at(lng=lon, lat=lat)
+        tz = pytz.timezone(tzn)
+        # Get timezone offset (seconds) from UTC
+        # utc_offset = tz.utcoffset(sunrise).seconds
+        utc_offset = sunrise.replace(tzinfo=pytz.utc).astimezone(tz).utcoffset().total_seconds()
+        # Apply offset to sunrise + sunset times
+        sunrise += TD(seconds=utc_offset)
+        sunset += TD(seconds=utc_offset)
 
     return sunrise, sunset
 
@@ -114,6 +130,10 @@ if __name__ == '__main__':
                 type=float,
                 default=3.209986, # Ekofisk
                 )
+        parser.add_argument("--local", 
+                help=("Return time in local time zone"),
+                action='store_true',
+                )
         return parser.parse_args(**kwargs)
 
     # Call args parser to create variables out of input arguments
@@ -126,8 +146,14 @@ if __name__ == '__main__':
         # Convert date string to datetime
         date = DT.strptime(args.date, '%Y%m%d')
 
+    # UTC or local time output
+    if args.local:
+        utc=False
+    else:
+        utc=True
+
     # Get sunrise + sunset times
-    sunrise, sunset = sunrise_sunset(date, args.lat, args.lon)
+    sunrise, sunset = sunrise_sunset(date=date, lat=args.lat, lon=args.lon, utc=utc)
     print('sunrise: {}, sunset: {}'.format(sunrise, sunset))
 
     # Make list of daylight hours (for stereo video scheduling)
