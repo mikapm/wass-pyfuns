@@ -22,6 +22,8 @@ dependencies:
   - scikit-image
   - nbconvert
   - cftime
+  - pytz
+  - timezonefinder
   - cf_xarray
   - netcdf4
   - opencv
