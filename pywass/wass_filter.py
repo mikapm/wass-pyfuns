@@ -46,7 +46,7 @@ def interpolate_time(ds, fs=5):
     return ds
 
 
-def filt_gauss3d(ds, fs=5, sigma=1.5, interpolate=True):
+def filt_gauss3d(ds, fs=5, sigma=1.5, interpolate=False):
     """
     Apply 3D Gaussian filter to WASS xr.Dataset ds.
 
@@ -67,9 +67,9 @@ def filt_gauss3d(ds, fs=5, sigma=1.5, interpolate=True):
     if interpolate:
         ds = interpolate_time(ds, fs=fs)
     # Compute radius parameter from sigma
-    radius=np.ceil(2 * sigma).astype(int)
-    print('Filtering in time + space ...')
-    print(f'sigma: {sigma:.2f}, radius: {radius:.2f}')
+    radius = np.ceil(2 * sigma).astype(int)
+    print('Gaussian filtering in time + space ...')
+    # print(f'sigma: {sigma:.2f}, radius: {radius:.2f}')
     res = gaussian_filter(ds.eta.values, sigma=sigma, radius=radius)
     # New dataset for filtered grids
     ds = xr.Dataset(data_vars={'eta':(['time','x','y'], res)},
@@ -82,10 +82,10 @@ def filt_gauss3d(ds, fs=5, sigma=1.5, interpolate=True):
     return ds 
 
 
-def filt_fft3d(ds, fs=5, np=4, interpolate=True):
+def filt_fft3d(ds, fs=5, np=4, interpolate=False):
     """
     Apply FFT-based 3D filter to xr.Dataset ds.
-    Filters out frequencies >np*peak frequency.
+    Filters out frequencies > np*peak frequency.
 
     Based on filter_stereodata.m function by
     Francesco Fedele (GA Tech).
@@ -96,8 +96,6 @@ def filt_fft3d(ds, fs=5, np=4, interpolate=True):
         ds - xr.Dataset with WASS eta(t,x,y) grid
         fs - scalar; sampling rate (Hz)
         np - scalar; multiple of peak freq. for cutoff
-        sigma - scalar; sigma parameter for
-                scipy.ndimage.gaussian_filter 
         interpolate - bool; if True, linearly interpolate 
                       over time dimension before filtering.
     
